@@ -17,6 +17,16 @@ use PvC\Target;
 
 require __DIR__ . '/../src/Scanner.php';
 
+// Under the PHP built-in dev server, serve existing static files (e.g. app.html)
+// directly instead of routing them through this front controller.
+if (PHP_SAPI === 'cli-server') {
+    $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+    $file = __DIR__ . $path;
+    if ($path !== '/' && is_file($file) && basename($file) !== 'index.php') {
+        return false;
+    }
+}
+
 const RATE_LIMIT = 20;        // scans per window
 const RATE_WINDOW = 3600;     // seconds
 
@@ -43,14 +53,40 @@ function rate_limited(): bool
 $report = null;
 $error = null;
 $input = '';
+$method = $_SERVER['REQUEST_METHOD'];
 $wantJson = ($_GET['format'] ?? '') === 'json' || str_contains($_SERVER['HTTP_ACCEPT'] ?? '', 'application/json');
 $allowPrivate = getenv('PVC_ALLOW_PRIVATE') === '1';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $input = trim((string)($_POST['url'] ?? ''));
+// --- CORS: allow a separate front-end (e.g. GitHub Pages) to call this API.
+// Set PVC_CORS_ORIGIN to your front-end origin to lock it down; default is open.
+$corsOrigin = getenv('PVC_CORS_ORIGIN') ?: '*';
+header('Access-Control-Allow-Origin: ' . $corsOrigin);
+header('Vary: Origin');
+if ($method === 'OPTIONS') {
+    header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+    header('Access-Control-Allow-Headers: Content-Type');
+    header('Access-Control-Max-Age: 86400');
+    http_response_code(204);
+    exit;
+}
+
+// Health check for load balancers / uptime monitors.
+if ($method === 'GET' && ($_GET['health'] ?? '') !== '') {
+    header('Content-Type: application/json');
+    echo json_encode(['status' => 'ok', 'php' => PHP_VERSION, 'time' => date('c')]);
+    exit;
+}
+
+// Accept the target from a POST form, or a GET query (?url=...) for the JSON API.
+$input = trim((string)($_POST['url'] ?? $_GET['url'] ?? ''));
+
+if ($method === 'POST' || ($wantJson && $input !== '')) {
     try {
         if (rate_limited()) {
             throw new RuntimeException('Rate limit reached. Please wait before scanning again.');
+        }
+        if ($input === '') {
+            throw new RuntimeException('No URL provided.');
         }
         $target = Target::parse($input, $allowPrivate);
         $scanner = new Scanner();
@@ -62,6 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 if ($wantJson) {
     header('Content-Type: application/json');
+    http_response_code($error !== null ? 400 : 200);
     echo json_encode($report ?? ['error' => $error], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
     exit;
 }

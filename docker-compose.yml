@@ -1,0 +1,11 @@
+services:
+  scanner:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      # Lock the API to your front-end origin in production, e.g.:
+      # PVC_CORS_ORIGIN: "https://snikumbha-t.github.io"
+      PVC_CORS_ORIGIN: "*"
+      PORT: "8080"
+    restart: unless-stopped

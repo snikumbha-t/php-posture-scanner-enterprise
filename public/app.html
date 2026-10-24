@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PHP Posture Scanner — Live</title>
+<style>
+  :root{--bg:#0f172a;--panel:#1e293b;--panel2:#273449;--line:#334155;--text:#e2e8f0;
+    --muted:#94a3b8;--accent:#38bdf8;--accent2:#818cf8}
+  *{box-sizing:border-box}
+  body{margin:0;font:15px/1.6 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    background:linear-gradient(180deg,#0b1220,#0f172a);color:var(--text);min-height:100vh}
+  a{color:var(--accent)}
+  .wrap{max-width:900px;margin:0 auto;padding:32px 20px 80px}
+  .logo{display:inline-flex;align-items:center;gap:10px}
+  .logo .mark{width:34px;height:34px;border-radius:9px;
+    background:conic-gradient(from 210deg,var(--accent),var(--accent2));
+    display:grid;place-items:center;font-weight:800;color:#0b1220}
+  h1{font-size:28px;margin:0 0 4px;letter-spacing:-.02em}
+  .tag{font-size:11px;border:1px solid var(--accent);color:var(--accent);border-radius:999px;
+    padding:3px 10px;vertical-align:middle;margin-left:8px;text-transform:uppercase;letter-spacing:.08em}
+  .sub{color:var(--muted);margin:4px 0 24px}
+  form.search{display:flex;gap:10px;background:var(--panel);border:1px solid var(--line);
+    padding:10px;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.3)}
+  form.search input{flex:1;background:var(--panel2);border:1px solid var(--line);color:var(--text);
+    padding:14px 16px;border-radius:10px;font-size:16px;outline:none}
+  form.search input:focus{border-color:var(--accent)}
+  form.search button{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#07101f;
+    border:0;padding:0 24px;border-radius:10px;font-weight:700;font-size:16px;cursor:pointer}
+  form.search button:disabled{opacity:.5;cursor:default}
+  .apirow{display:flex;gap:8px;align-items:center;margin:14px 2px 0;font-size:13px;color:var(--muted);flex-wrap:wrap}
+  .apirow input{flex:1;min-width:220px;background:var(--panel2);border:1px solid var(--line);
+    color:var(--text);padding:8px 10px;border-radius:8px;font:12px ui-monospace,Menlo,Consolas,monospace}
+  .notice{font-size:13px;color:var(--muted);margin:12px 2px 0;display:flex;gap:8px;align-items:flex-start}
+  .notice b{color:#cbd5e1}
+  .err{background:#3b1113;border:1px solid #7f1d1d;color:#fecaca;padding:14px 16px;border-radius:12px;margin-top:20px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px;margin-top:22px}
+  .scoreline{display:flex;gap:22px;align-items:center;flex-wrap:wrap}
+  .grade{width:92px;height:92px;border-radius:20px;display:grid;place-items:center;font-size:46px;
+    font-weight:800;color:#07101f;flex:none}
+  .scoremeta{flex:1;min-width:220px}
+  .scoremeta h2{margin:0 0 4px;font-size:20px;word-break:break-all}
+  .scoremeta .m{color:var(--muted);font-size:13px}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .chip{font-size:12px;padding:5px 10px;border-radius:999px;border:1px solid var(--line);
+    background:var(--panel2);color:var(--muted)}
+  .chip b{color:var(--text)}
+  .bars{display:flex;gap:6px;margin-top:16px;flex-wrap:wrap}
+  .bar{font-size:12px;padding:6px 10px;border-radius:8px;font-weight:600;color:#07101f}
+  h3.section{margin:28px 0 10px;font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+  .finding{border:1px solid var(--line);border-left-width:4px;border-radius:12px;padding:14px 16px;
+    margin:10px 0;background:var(--panel2)}
+  .finding .top{display:flex;gap:10px;align-items:center;justify-content:space-between}
+  .finding .title{font-weight:650}
+  .sev{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;padding:3px 8px;
+    border-radius:6px;color:#07101f;flex:none}
+  .finding .cat{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-top:2px}
+  .finding .detail{color:#cbd5e1;margin:8px 0 0;font-size:14px}
+  .finding .rec{margin-top:10px;font-size:14px;background:#0b1526;border:1px solid var(--line);
+    border-radius:9px;padding:10px 12px}
+  .finding .rec b{color:var(--accent)}
+  .finding .ev{margin-top:8px;font:12px/1.5 ui-monospace,Menlo,Consolas,monospace;color:var(--muted);
+    white-space:pre-wrap;word-break:break-word;background:#0b1526;border-radius:8px;padding:8px 10px}
+  .spinner{display:inline-block;width:16px;height:16px;border:2px solid #07101f55;border-top-color:#07101f;
+    border-radius:50%;animation:spin .7s linear infinite;vertical-align:-3px;margin-right:6px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  footer{color:var(--muted);font-size:12px;margin-top:40px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo"><span class="mark">φ</span>
+    <h1>PHP Posture Scanner<span class="tag">Live</span></h1></div>
+  <p class="sub">Enter a website address. This calls a real scanning backend that fetches the site and
+    reads its actual headers, version, cookies and exposed files — no simulation.</p>
+
+  <form class="search" id="f">
+    <input type="url" id="url" placeholder="https://example.com" autocomplete="off" autofocus required>
+    <button type="submit" id="go">Scan</button>
+  </form>
+
+  <div class="apirow">
+    <label for="api">Backend&nbsp;API</label>
+    <input type="url" id="api" placeholder="https://your-scanner.fly.dev" spellcheck="false">
+    <span id="apihint"></span>
+  </div>
+
+  <div class="notice"><span>🔒</span><span>
+    <b>Scan only sites you own or are authorised to test.</b> The backend makes ordinary GET/HEAD
+    requests and reads only public responses — no exploits, no brute-forcing.</span></div>
+
+  <div id="out"></div>
+
+  <footer>Real backend scanner · results come from the server, not the browser.</footer>
+</div>
+
+<script>
+const SEV = {
+  critical:['Critical','#dc2626'], high:['High','#ea580c'], medium:['Medium','#d97706'],
+  low:['Low','#ca8a04'], info:['Info','#2563eb'], good:['Pass','#16a34a']
+};
+const GRADE = {A:'#16a34a',B:'#65a30d',C:'#d97706',D:'#ea580c',F:'#dc2626'};
+const esc = s => String(s??'').replace(/[&<>"']/g, c =>
+  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+// Backend URL: ?api=... wins, else saved value, else blank (user must set once).
+const qp = new URLSearchParams(location.search);
+const apiEl = document.getElementById('api');
+apiEl.value = qp.get('api') || localStorage.getItem('pvc_api') || '';
+apiEl.addEventListener('change', () => localStorage.setItem('pvc_api', apiEl.value.trim()));
+document.getElementById('apihint').textContent = apiEl.value ? '' : '← set your deployed backend URL once';
+
+const out = document.getElementById('out');
+const go = document.getElementById('go');
+
+document.getElementById('f').addEventListener('submit', async e => {
+  e.preventDefault();
+  const url = document.getElementById('url').value.trim();
+  const api = apiEl.value.trim().replace(/\/+$/,'');
+  if (!api) { out.innerHTML = err('Set your backend API URL first (e.g. https://your-scanner.fly.dev).'); return; }
+  if (!url) return;
+  localStorage.setItem('pvc_api', api);
+
+  go.disabled = true; go.innerHTML = '<span class="spinner"></span>Scanning';
+  out.innerHTML = '<div class="card"><span class="spinner" style="border-color:#38bdf855;border-top-color:#38bdf8"></span> Contacting backend and scanning <b>'+esc(url)+'</b>…</div>';
+  try {
+    const body = new URLSearchParams({url});
+    const res = await fetch(api + '/?format=json', {method:'POST', body});
+    const data = await res.json().catch(() => { throw new Error('Backend did not return JSON (is the URL correct?)'); });
+    if (data.error) { out.innerHTML = err(data.error); return; }
+    render(data);
+  } catch (ex) {
+    out.innerHTML = err('Could not reach the backend at ' + esc(api) + '. '
+      + 'Check the URL, that the server is running, and that its PVC_CORS_ORIGIN allows this page. '
+      + '(' + esc(ex.message) + ')');
+  } finally {
+    go.disabled = false; go.textContent = 'Scan';
+  }
+});
+
+function err(msg){ return '<div class="err"><strong>Error:</strong> '+esc(msg)+'</div>'; }
+
+function findingHtml(f, n){
+  const [lbl,col] = SEV[f.severity] || SEV.info;
+  return '<div class="finding" style="border-left-color:'+col+'">'
+    + '<div class="top"><span class="title">'+(n?n+'. ':'')+esc(f.title)+'</span>'
+    + '<span class="sev" style="background:'+col+'">'+lbl+'</span></div>'
+    + '<div class="cat">'+esc(f.category)+'</div>'
+    + (f.detail?'<div class="detail">'+esc(f.detail)+'</div>':'')
+    + (f.recommendation?'<div class="rec"><b>Fix:</b> '+esc(f.recommendation)+'</div>':'')
+    + (f.evidence?'<div class="ev">'+esc(f.evidence)+'</div>':'')
+    + '</div>';
+}
+
+function render(d){
+  const m = d.meta || {};
+  const gc = GRADE[d.grade] || '#dc2626';
+  let chips = '<span class="chip">PHP: <b>'+(m.is_php?'detected':'not detected')+'</b></span>';
+  if (m.php_version) chips += '<span class="chip">Version: <b>'+esc(m.php_version)+'</b></span>';
+  if (m.server) chips += '<span class="chip">Server: <b>'+esc(m.server)+'</b></span>';
+  if (m.cms) chips += '<span class="chip">CMS: <b>'+esc(m.cms)+'</b></span>';
+  let bars = '';
+  for (const s of ['critical','high','medium','low','good']) {
+    const n = (d.counts||{})[s]||0; if(!n) continue;
+    bars += '<span class="bar" style="background:'+SEV[s][1]+'">'+n+' '+SEV[s][0]+'</span>';
+  }
+  let html = '<div class="card"><div class="scoreline">'
+    + '<div class="grade" style="background:'+gc+'">'+esc(d.grade)+'</div>'
+    + '<div class="scoremeta"><h2>'+esc(m.target||'')+'</h2>'
+    + '<div class="m">Score '+(d.score|0)+'/100 · IP '+esc(m.ip||'?')
+    + ' · '+(m.requests|0)+' requests · '+esc(String(m.scanned_at||'').slice(0,19))+'</div>'
+    + '<div class="chips">'+chips+'</div><div class="bars">'+bars+'</div></div></div></div>';
+
+  const plan = d.action_plan||[];
+  html += '<h3 class="section">Recommended actions ('+plan.length+')</h3>';
+  if (!plan.length) html += '<div class="finding" style="border-left-color:#16a34a"><div class="title">No issues found in the passive checks.</div></div>';
+  else plan.forEach((f,i)=> html += findingHtml(f,i+1));
+
+  const passes = (d.findings||[]).filter(f => f.severity==='good'||f.severity==='info');
+  if (passes.length){
+    html += '<h3 class="section">Passed / informational ('+passes.length+')</h3>';
+    passes.forEach(f => html += findingHtml(f,0));
+  }
+  out.innerHTML = html;
+}
+</script>
+</body>
+</html>

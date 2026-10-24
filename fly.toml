@@ -1,0 +1,29 @@
+# fly.io deploy config.  One-time: `fly launch --no-deploy --copy-config` (or just `fly launch`).
+# Then: `fly deploy`.  App name is chosen on first launch.
+app = "php-posture-scanner"
+primary_region = "lhr"   # London; change to your nearest region
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "8080"
+  # Set your front-end origin once deployed:
+  # PVC_CORS_ORIGIN = "https://snikumbha-t.github.io"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[http_service.checks]]
+    method = "GET"
+    path = "/?health=1"
+    interval = "30s"
+    timeout = "5s"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"

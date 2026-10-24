@@ -43,6 +43,39 @@ Behind Apache/nginx, set the document root to `public/`.
 curl -X POST -d "url=https://example.com" "http://localhost:8000/?format=json"
 ```
 
+## Deploy a live backend (one command)
+
+The app is a normal PHP web service. A `Dockerfile` (based on `php:8.3-apache`, with `curl`/`json`/`mbstring`/`openssl` built in) is included, plus ready-made configs for two free hosts. Pick one:
+
+**Fly.io**
+```bash
+fly launch --copy-config --now     # first time (uses fly.toml)
+# later deploys:
+fly deploy
+```
+
+**Render.com** — push to GitHub, then *New → Blueprint* and select this repo (`render.yaml` is detected automatically). Or with the CLI: `render blueprint launch`.
+
+**Docker anywhere**
+```bash
+docker compose up --build -d        # serves on http://localhost:8080
+# or:
+docker build -t pvc . && docker run -p 8080:8080 pvc
+```
+
+Health check: `GET /?health=1`. Lock the API to your front-end by setting `PVC_CORS_ORIGIN` (e.g. `https://snikumbha-t.github.io`); it defaults to `*`.
+
+> Note: the Docker image wasn't built inside the authoring sandbox (no Docker daemon there), so give it a quick `docker compose up` locally before deploying. The backend's JSON API, CORS, health and error paths were tested directly.
+
+## Real browser front-end
+
+`public/app.html` is a static page that calls the live backend's JSON API and renders a genuine report — **no simulation**. It works two ways:
+
+- **Served by the backend** — it lives in `public/`, so once deployed it's at `https://<your-host>/app.html`. If you open it on the same host as the backend, leave the *Backend API* field pointing at that host.
+- **On GitHub Pages** — copy `public/app.html` into your Pages repo (e.g. as `index.html`). On first use, paste your deployed backend URL into the *Backend API* field (it's remembered in `localStorage`), or link it directly: `…/?api=https://your-scanner.fly.dev`.
+
+The page sends `POST {url}` to `‹backend›/?format=json` and shows the grade, score, action plan and all findings returned by the server.
+
 ## Run from the command line
 
 ```bash

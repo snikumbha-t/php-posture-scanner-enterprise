@@ -1,0 +1,14 @@
+# Render.com Blueprint. Push to GitHub, then "New → Blueprint" and pick this repo,
+# or use the Render CLI. Render builds the Dockerfile automatically.
+services:
+  - type: web
+    name: php-posture-scanner
+    runtime: docker
+    plan: free
+    region: frankfurt       # change to your nearest region
+    healthCheckPath: /?health=1
+    envVars:
+      - key: PORT
+        value: "8080"
+      - key: PVC_CORS_ORIGIN
+        value: "*"          # set to https://snikumbha-t.github.io to lock down
