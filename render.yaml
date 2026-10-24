@@ -7,8 +7,7 @@ services:
     plan: free
     region: frankfurt       # change to your nearest region
     healthCheckPath: /?health=1
+    # Render injects its own $PORT; the Dockerfile binds to it automatically.
     envVars:
-      - key: PORT
-        value: "8080"
       - key: PVC_CORS_ORIGIN
-        value: "*"          # set to https://snikumbha-t.github.io to lock down
+        value: "https://snikumbha-t.github.io"   # lock the API to the Pages site
